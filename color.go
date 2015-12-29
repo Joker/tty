@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	Esc   = "\033["   // \x1b
-	Reset = "\033[0m" // \x1b[39;49m
+	Escape = "\033["   // \x1b
+	Reset  = "\033[0m" // \x1b[39;49m
 
 	Black   = "\033[30m"
 	Red     = "\033[31m"
@@ -76,6 +76,9 @@ var std = log.New(os.Stderr, "", log.LstdFlags)
 func Info(v ...interface{}) {
 	std.Output(2, fmt.Sprintf(" %s[INFO]%s  %s\n", Green_h, Reset, fmt.Sprint(v...)))
 }
+func Note(v ...interface{}) {
+	std.Output(2, fmt.Sprintf(" %s[NOTE]%s  %s\n", Blue_h, Reset, fmt.Sprint(v...)))
+}
 func Warn(v ...interface{}) {
 	std.Output(2, fmt.Sprintf(" %s[WARN]%s  %s\n", Yellow_h, Reset, fmt.Sprint(v...)))
 }
@@ -87,6 +90,9 @@ func Fatal(v ...interface{}) {
 }
 func Infof(format string, v ...interface{}) {
 	std.Output(2, fmt.Sprintf(" %s[INFO]%s  %s\n", Green_h, Reset, fmt.Sprintf(format, v...)))
+}
+func Notef(format string, v ...interface{}) {
+	std.Output(2, fmt.Sprintf(" %s[NOTE]%s  %s\n", Blue_h, Reset, fmt.Sprintf(format, v...)))
 }
 func Warnf(format string, v ...interface{}) {
 	std.Output(2, fmt.Sprintf(" %s[WARN]%s  %s\n", Yellow_h, Reset, fmt.Sprintf(format, v...)))
@@ -137,4 +143,8 @@ func White_f() {
 }
 func End() {
 	fmt.Print("\033[0m")
+}
+
+func Esc(e string) {
+	fmt.Print("\033[" + e)
 }

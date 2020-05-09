@@ -57,3 +57,15 @@ func Errorf(format string, v ...interface{}) {
 func Fatalf(format string, v ...interface{}) {
 	std.Output(2, fmt.Sprintf(" %s[FATA]%s  %s%s\n", c.Red, c.Reset, fmt.Sprintf(format, v...), c.Reset))
 }
+
+func Print(in interface{}) {
+	std.Output(2, newPrinter(in).String())
+	std.Output(2, "\n")
+}
+func Println(v ...interface{}) {
+	var out = make([]interface{}, len(v))
+	for i, object := range v {
+		out[i] = newPrinter(object).String()
+	}
+	std.Output(2, fmt.Sprintln(out...))
+}

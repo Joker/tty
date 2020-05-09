@@ -1,6 +1,6 @@
 // Based on https://github.com/k0kubun/pp by Takashi Kokubun (c) 2015 The MIT License (MIT)
 
-package ioterm
+package tty
 
 import (
 	"fmt"

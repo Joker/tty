@@ -1,6 +1,7 @@
 // Based on https://github.com/k0kubun/pp by Takashi Kokubun (c) 2015 The MIT License (MIT)
+// +build !windows
 
-package ioterm
+package tty
 
 import (
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	c "github.com/Joker/ioterm/color"
+	c "github.com/Joker/tty/color"
 	bb "github.com/valyala/bytebufferpool"
 )
 

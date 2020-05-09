@@ -1,4 +1,4 @@
-module github.com/Joker/ioterm
+module github.com/Joker/tty
 
 go 1.14
 

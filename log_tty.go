@@ -1,13 +1,13 @@
 // +build !windows
 
-package ioterm
+package tty
 
 import (
 	"fmt"
 	"log"
 	"os"
 
-	c "github.com/Joker/ioterm/color"
+	c "github.com/Joker/tty/color"
 )
 
 const (

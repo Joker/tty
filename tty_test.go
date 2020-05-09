@@ -1,4 +1,4 @@
-package ioterm
+package tty
 
 import (
 	"fmt"

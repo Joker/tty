@@ -1,8 +1,8 @@
 // +build linux
 // from https://github.com/nsf/termbox-go/
 
-// Package ioterm - utilities to work with terminals.
-package ioterm
+// package tty - utilities to work with terminals.
+package tty
 
 import "syscall"
 import "os"

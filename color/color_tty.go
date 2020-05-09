@@ -4,7 +4,13 @@
 // '\033[%d;%dm' 			where %d is SGR(0..107)
 // '\033[38;2;%d;%d;%d;m' 	where %d is r;g;b (Cyan = 0;205;205)
 // '\033[38;5;%dm' 			where %d is color index (0..255)
+
+// bash:
+// for COLOR in {1..255}; do echo -en "\e[38;5;${COLOR}m${COLOR} "; done; echo;
+
 package color
+
+import "fmt"
 
 const (
 	Escape = "\033["   // \x1b
@@ -64,3 +70,51 @@ const (
 	Cyan_lb    = "\033[106m"
 	White_lb   = "\033[107m"
 )
+
+// N for 256 colors, where n is color index (0..255)
+func N(n int) string {
+	return fmt.Sprintf("\033[38;5;%dm", n)
+}
+
+// Nb for 256 background colors, where n is color index (0..255)
+func Nb(n int) string {
+	return fmt.Sprintf("\033[48;5;%dm", n)
+}
+func RGB(r, g, b int) string {
+	return fmt.Sprintf("\033[38;2;%d;%d;%dm", r, g, b)
+}
+func RGBb(r, g, b int) string {
+	return fmt.Sprintf("\033[48;2;%d;%d;%dm", r, g, b)
+}
+
+func NowBlack() {
+	fmt.Print("\033[30m")
+}
+func NowRed() {
+	fmt.Print("\033[31m")
+}
+func NowGreen() {
+	fmt.Print("\033[32m")
+}
+func NowYellow() {
+	fmt.Print("\033[33m")
+}
+func NowBlue() {
+	fmt.Print("\033[34m")
+}
+func NowMagenta() {
+	fmt.Print("\033[35m")
+}
+func NowCyan() {
+	fmt.Print("\033[36m")
+}
+func NowWhite() {
+	fmt.Print("\033[37m")
+}
+func End() {
+	fmt.Print("\033[0m")
+}
+
+func Esc(e string) {
+	fmt.Print("\033[" + e)
+}

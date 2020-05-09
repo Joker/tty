@@ -3,7 +3,6 @@
 package ioterm
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -11,35 +10,58 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	c "github.com/Joker/ioterm/color"
+	bb "github.com/valyala/bytebufferpool"
 )
 
 const (
-	PrintMapTypes       = true
-	BufferFoldThreshold = 1024
+	Bool        = c.Cyan_h
+	Integer     = c.Blue_h
+	Float       = c.Magenta_h
+	String      = c.Red
+	StringQuote = c.Red_h
+	EscapedChar = c.Magenta_h
+	FieldName   = c.Yellow
+	Pointer     = c.Blue_h
+	Nil         = c.Cyan_h
+	Time        = c.Blue_h
+	StructName  = c.Green
+	ObjectLen   = c.Blue
+	end         = c.Reset
+
+	printMapTypes   = true
+	printBufferSize = 1024
 )
 
 var (
-	indentWidth = 2
+	MaxDepth = -1
+	TabSize  = 2
 )
 
 type printer struct {
-	*bytes.Buffer
-	tw              *tabwriter.Writer
-	depth           int
-	maxDepth        int
-	value           reflect.Value
-	visited         map[uintptr]bool
-	coloringEnabled bool
+	// *bytes.Buffer
+	*bb.ByteBuffer
+	tw *tabwriter.Writer
+
+	depth   int
+	value   reflect.Value
+	visited map[uintptr]bool
 }
 
 func newPrinter(object interface{}) *printer {
-	buffer := bytes.NewBufferString("")
-	tw := new(tabwriter.Writer)
-	tw.Init(buffer, indentWidth, 0, 1, ' ', 0)
+	var (
+		// buffer = bytes.NewBufferString("")
+		buffer = bb.Get()
+		writer = new(tabwriter.Writer)
+	)
+	writer.Init(buffer, TabSize, 0, 1, ' ', 0)
 
 	return &printer{
-		Buffer:  buffer,
-		tw:      tw,
+		// Buffer: buffer,
+		ByteBuffer: buffer,
+		tw:         writer,
+
 		depth:   0,
 		value:   reflect.ValueOf(object),
 		visited: map[uintptr]bool{},
@@ -59,13 +81,13 @@ func (p *printer) format(object interface{}) string {
 func (p *printer) String() string {
 	switch p.value.Kind() {
 	case reflect.Bool:
-		p.colorPrint(p.raw(), Bool)
+		fmt.Fprintf(p.tw, "%s%s%s", Bool, p.raw(), end)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Uintptr, reflect.Complex64, reflect.Complex128:
-		p.colorPrint(p.raw(), Integer)
+		fmt.Fprintf(p.tw, "%s%s%s", Integer, p.raw(), end)
 	case reflect.Float32, reflect.Float64:
-		p.colorPrint(p.raw(), Float)
+		fmt.Fprintf(p.tw, "%s%s%s", Float, p.raw(), end)
 	case reflect.String:
 		p.printString()
 	case reflect.Map:
@@ -74,24 +96,25 @@ func (p *printer) String() string {
 		p.printStruct()
 	case reflect.Array, reflect.Slice:
 		p.printSlice()
-	case reflect.Chan:
-		p.printf("(%s)(%s)", p.typeString(), p.pointerAddr())
 	case reflect.Interface:
 		p.printInterface()
 	case reflect.Ptr:
 		p.printPtr()
 	case reflect.Func:
-		p.printf("%s {...}", p.typeString())
+		fmt.Fprintf(p.tw, "%s {...}", p.typeString())
+	case reflect.Chan:
+		fmt.Fprintf(p.tw, "(%s)(%s%#v%s)", p.typeString(), Pointer, p.value.Pointer(), end)
 	case reflect.UnsafePointer:
-		p.printf("%s(%s)", p.typeString(), p.pointerAddr())
+		fmt.Fprintf(p.tw, "%s(%s%#v%s)", p.typeString(), Pointer, p.value.Pointer(), end)
 	case reflect.Invalid:
-		p.print(p.nil())
+		fmt.Fprint(p.tw, p.nil())
 	default:
-		p.print(p.raw())
+		fmt.Fprint(p.tw, p.raw())
 	}
 
 	p.tw.Flush()
-	return p.Buffer.String()
+	// return p.Buffer.String()
+	return p.ByteBuffer.String()
 }
 
 func (p *printer) raw() string {
@@ -120,45 +143,21 @@ func (p *printer) raw() string {
 	}
 }
 
-func (p *printer) print(text string) {
-	fmt.Fprint(p.tw, text)
-}
-
-func (p *printer) printf(format string, args ...interface{}) {
-	text := fmt.Sprintf(format, args...)
-	p.print(text)
-}
-
-func (p *printer) println(text string) {
-	p.print(text + "\n")
-}
-
-func (p *printer) indentPrint(text string) {
-	p.print(p.indent() + text)
-}
-
-func (p *printer) indentPrintf(format string, args ...interface{}) {
-	text := fmt.Sprintf(format, args...)
-	p.indentPrint(text)
-}
-
-func (p *printer) colorPrint(text string, color uint16) {
-	p.print(p.colorize(text, color))
-}
+//
 
 func (p *printer) printString() {
 	quoted := strconv.Quote(p.value.String())
 	quoted = quoted[1 : len(quoted)-1]
 
-	p.colorPrint(`"`, StringQuotation)
+	fmt.Fprintf(p.tw, "%s\"%s", StringQuote, end)
 	for len(quoted) > 0 {
 		pos := strings.IndexByte(quoted, '\\')
 		if pos == -1 {
-			p.colorPrint(quoted, String)
+			fmt.Fprintf(p.tw, "%s%s%s", String, quoted, end)
 			break
 		}
 		if pos != 0 {
-			p.colorPrint(quoted[0:pos], String)
+			fmt.Fprintf(p.tw, "%s%s%s", String, quoted[0:pos], end)
 		}
 
 		n := 1
@@ -172,37 +171,37 @@ func (p *printer) printString() {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9': // "\000"
 			n = 3
 		}
-		p.colorPrint(quoted[pos:pos+n+1], EscapedChar)
+		fmt.Fprintf(p.tw, "%s%s%s", EscapedChar, quoted[pos:pos+n+1], end)
 		quoted = quoted[pos+n+1:]
 	}
-	p.colorPrint(`"`, StringQuotation)
+	fmt.Fprintf(p.tw, "%s\"%s", StringQuote, end)
 }
 
 func (p *printer) printMap() {
 	if p.value.Len() == 0 {
-		p.printf("%s{}", p.typeString())
+		fmt.Fprintf(p.tw, "%s{}", p.typeString())
 		return
 	}
 
 	if p.visited[p.value.Pointer()] {
-		p.printf("%s{...}", p.typeString())
+		fmt.Fprintf(p.tw, "%s{...}", p.typeString())
 		return
 	}
 	p.visited[p.value.Pointer()] = true
 
-	if PrintMapTypes {
-		p.printf("%s{\n", p.typeString())
+	if printMapTypes {
+		fmt.Fprintf(p.tw, "%s{\n", p.typeString())
 	} else {
-		p.println("{")
+		fmt.Fprintln(p.tw, "{")
 	}
 	p.indented(func() {
 		keys := p.value.MapKeys()
 		for i := 0; i < p.value.Len(); i++ {
 			value := p.value.MapIndex(keys[i])
-			p.indentPrintf("%s:\t%s,\n", p.format(keys[i]), p.format(value))
+			fmt.Fprintf(p.tw, "%s%s:\t%s,\n", p.indent(), p.format(keys[i]), p.format(value))
 		}
 	})
-	p.indentPrint("}")
+	fmt.Fprintf(p.tw, "%s}", p.indent())
 }
 
 func (p *printer) printStruct() {
@@ -212,66 +211,68 @@ func (p *printer) printStruct() {
 	}
 
 	if p.value.NumField() == 0 {
-		p.print(p.typeString() + "{}")
+		fmt.Fprint(p.tw, p.typeString()+"{}")
 		return
 	}
 
-	p.println(p.typeString() + "{")
+	fmt.Fprintln(p.tw, p.typeString()+"{")
 	p.indented(func() {
 		for i := 0; i < p.value.NumField(); i++ {
-			field := p.colorize(p.value.Type().Field(i).Name, FieldName)
+			field := fmt.Sprintf("%s%s%s", FieldName, p.value.Type().Field(i).Name, end)
 			value := p.value.Field(i)
-			p.indentPrintf("%s:\t%s,\n", field, p.format(value))
+			fmt.Fprintf(p.tw, "%s%s:\t%s,\n", p.indent(), field, p.format(value))
 		}
 	})
-	p.indentPrint("}")
+	fmt.Fprintf(p.tw, "%s}", p.indent())
 }
 
 func (p *printer) printTime() {
 	if !p.value.CanInterface() {
-		p.printf("(unexported time.Time)")
+		fmt.Fprint(p.tw, "(unexported time.Time)")
 		return
 	}
 
 	tm := p.value.Interface().(time.Time)
-	p.printf(
-		"%s-%s-%s %s:%s:%s %s",
-		p.colorize(strconv.Itoa(tm.Year()), Time),
-		p.colorize(fmt.Sprintf("%02d", tm.Month()), Time),
-		p.colorize(fmt.Sprintf("%02d", tm.Day()), Time),
-		p.colorize(fmt.Sprintf("%02d", tm.Hour()), Time),
-		p.colorize(fmt.Sprintf("%02d", tm.Minute()), Time),
-		p.colorize(fmt.Sprintf("%02d", tm.Second()), Time),
-		p.colorize(tm.Location().String(), Time),
+	fmt.Fprintf(p.tw,
+		"%s%d-%02d-%02d %02d:%02d:%02d %s%s",
+		Time,
+		tm.Year(),
+		tm.Month(),
+		tm.Day(),
+		tm.Hour(),
+		tm.Minute(),
+		tm.Second(),
+		tm.Location().String(),
+		end,
 	)
 }
 
 func (p *printer) printSlice() {
 	if p.value.Kind() == reflect.Slice && p.value.IsNil() {
-		p.printf("%s(%s)", p.typeString(), p.nil())
+		fmt.Fprintf(p.tw, "%s(%s)", p.typeString(), p.nil())
 		return
 	}
 	if p.value.Len() == 0 {
-		p.printf("%s{}", p.typeString())
+		fmt.Fprintf(p.tw, "%s{}", p.typeString())
 		return
 	}
 
 	if p.value.Kind() == reflect.Slice {
 		if p.visited[p.value.Pointer()] {
 			// Stop travarsing cyclic reference
-			p.printf("%s{...}", p.typeString())
+			fmt.Fprintf(p.tw, "%s{...}", p.typeString())
 			return
 		}
 		p.visited[p.value.Pointer()] = true
 	}
 
 	// Fold a large buffer
-	if p.value.Len() > BufferFoldThreshold {
-		p.printf("%s{...}", p.typeString())
+	if p.value.Len() > printBufferSize {
+		fmt.Fprintf(p.tw, "%s{...}", p.typeString())
 		return
 	}
 
-	p.println(p.typeString() + "{")
+	fmt.Fprintln(p.tw, p.typeString()+"{")
 	p.indented(func() {
 		groupsize := 0
 		switch p.value.Type().Elem().Kind() {
@@ -289,40 +290,40 @@ func (p *printer) printSlice() {
 			for i := 0; i < p.value.Len(); i++ {
 				// indent for new group
 				if i%groupsize == 0 {
-					p.print(p.indent())
+					fmt.Fprint(p.tw, p.indent())
 				}
 				// slice element
-				p.printf("%s,", p.format(p.value.Index(i)))
+				fmt.Fprintf(p.tw, "%s,", p.format(p.value.Index(i)))
 				// space or newline
 				if (i+1)%groupsize == 0 || i+1 == p.value.Len() {
-					p.print("\n")
+					fmt.Fprint(p.tw, "\n")
 				} else {
-					p.print(" ")
+					fmt.Fprint(p.tw, " ")
 				}
 			}
 		} else {
 			for i := 0; i < p.value.Len(); i++ {
-				p.indentPrintf("%s,\n", p.format(p.value.Index(i)))
+				fmt.Fprintf(p.tw, "%s%s,\n", p.indent(), p.format(p.value.Index(i)))
 			}
 		}
 	})
-	p.indentPrint("}")
+	fmt.Fprintf(p.tw, "%s}", p.indent())
 }
 
 func (p *printer) printInterface() {
 	e := p.value.Elem()
 	if e.Kind() == reflect.Invalid {
-		p.print(p.nil())
+		fmt.Fprint(p.tw, p.nil())
 	} else if e.IsValid() {
-		p.print(p.format(e))
+		fmt.Fprint(p.tw, p.format(e))
 	} else {
-		p.printf("%s(%s)", p.typeString(), p.nil())
+		fmt.Fprintf(p.tw, "%s(%s)", p.typeString(), p.nil())
 	}
 }
 
 func (p *printer) printPtr() {
 	if p.visited[p.value.Pointer()] {
-		p.printf("&%s{...}", p.elemTypeString())
+		fmt.Fprintf(p.tw, "&%s{...}", p.elemTypeString())
 		return
 	}
 	if p.value.Pointer() != 0 {
@@ -330,15 +331,13 @@ func (p *printer) printPtr() {
 	}
 
 	if p.value.Elem().IsValid() {
-		p.printf("&%s", p.format(p.value.Elem()))
+		fmt.Fprintf(p.tw, "&%s", p.format(p.value.Elem()))
 	} else {
-		p.printf("(%s)(%s)", p.typeString(), p.nil())
+		fmt.Fprintf(p.tw, "(%s)(%s)", p.typeString(), p.nil())
 	}
 }
 
-func (p *printer) pointerAddr() string {
-	return p.colorize(fmt.Sprintf("%#v", p.value.Pointer()), PointerAdress)
-}
+//
 
 func (p *printer) typeString() string {
 	return p.colorizeType(p.value.Type().String())
@@ -351,50 +350,42 @@ func (p *printer) elemTypeString() string {
 func (p *printer) colorizeType(t string) string {
 	prefix := ""
 
-	if p.matchRegexp(t, `^\[\].+$`) {
+	if p.match(t, `^\[\].+$`) {
 		prefix = "[]"
 		t = t[2:]
 	}
 
-	if p.matchRegexp(t, `^\[\d+\].+$`) {
+	if p.match(t, `^\[\d+\].+$`) {
 		num := regexp.MustCompile(`\d+`).FindString(t)
-		prefix = fmt.Sprintf("[%s]", p.colorize(num, ObjectLength))
+		prefix = fmt.Sprintf("[%s%s%s]", ObjectLen, num, end)
 		t = t[2+len(num):]
 	}
 
-	if p.matchRegexp(t, `^[^\.]+\.[^\.]+$`) {
+	if p.match(t, `^[^\.]+\.[^\.]+$`) {
 		ts := strings.Split(t, ".")
-		t = fmt.Sprintf("%s.%s", ts[0], p.colorize(ts[1], StructName))
+		t = fmt.Sprintf("%s.%s%s%s", ts[0], StructName, ts[1], end)
 	} else {
-		t = p.colorize(t, StructName)
+		t = fmt.Sprintf("%s%s%s", StructName, t, end)
 	}
 	return prefix + t
 }
 
-func (p *printer) matchRegexp(text, exp string) bool {
+func (p *printer) match(text, exp string) bool {
 	return regexp.MustCompile(exp).MatchString(text)
 }
 
 func (p *printer) indented(proc func()) {
 	p.depth++
-	if p.maxDepth == -1 || p.depth <= p.maxDepth {
+	if MaxDepth == -1 || p.depth <= MaxDepth {
 		proc()
 	}
 	p.depth--
 }
 
-func (p *printer) nil() string {
-	return p.colorize("nil", Nil)
-}
-
-func (p *printer) colorize(text string, color uint16) string {
-	if ColoringEnabled && p.coloringEnabled {
-		return colorizeText(text, color)
-	} else {
-		return text
-	}
-}
-
 func (p *printer) indent() string {
 	return strings.Repeat("\t", p.depth)
+}
+
+func (p *printer) nil() string {
+	return fmt.Sprintf("%snil%s", Nil, end)
 }

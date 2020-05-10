@@ -8,6 +8,7 @@ import (
 	"os"
 
 	c "github.com/Joker/tty/color"
+	"github.com/tidwall/pretty"
 )
 
 const (
@@ -61,7 +62,7 @@ func Fatalf(format string, v ...interface{}) {
 }
 
 func Print(in interface{}) {
-	std.Output(2, newPrinter(in).String()+"\n")
+	std.Output(2, newPrinter(in).String())
 }
 func Println(v ...interface{}) {
 	var out = make([]interface{}, len(v))
@@ -69,4 +70,11 @@ func Println(v ...interface{}) {
 		out[i] = newPrinter(object).String()
 	}
 	std.Output(2, fmt.Sprintln(out...))
+}
+
+func JSON(in string) {
+	std.Output(2, string(pretty.Color(pretty.Pretty([]byte(in)), nil)))
+}
+func ByJSON(in []byte) {
+	std.Output(2, string(pretty.Color(pretty.Pretty(in), nil)))
 }

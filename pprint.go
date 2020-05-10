@@ -29,10 +29,12 @@ const (
 	Time        = c.Blue_h
 	StructName  = c.Green
 	ObjectLen   = c.Blue
-	end         = c.Reset
 
 	printMapTypes   = true
 	printBufferSize = 1024
+
+	end  = c.Reset
+	snil = Nil + "nil" + end
 )
 
 var (
@@ -108,11 +110,10 @@ func (p *printer) String() string {
 	case reflect.UnsafePointer:
 		fmt.Fprintf(p.tw, "%s(%s%#v%s)", p.typeString(), Pointer, p.value.Pointer(), end)
 	case reflect.Invalid:
-		fmt.Fprint(p.tw, p.nil())
+		fmt.Fprint(p.tw, snil)
 	default:
 		fmt.Fprint(p.tw, p.raw())
 	}
-
 	p.tw.Flush()
 	// return p.Buffer.String()
 	return p.ByteBuffer.String()
@@ -235,22 +236,20 @@ func (p *printer) printTime() {
 
 	tm := p.value.Interface().(time.Time)
 	fmt.Fprintf(p.tw,
-		"%s%d-%02d-%02d %02d:%02d:%02d %s%s",
-		Time,
-		tm.Year(),
-		tm.Month(),
-		tm.Day(),
-		tm.Hour(),
-		tm.Minute(),
-		tm.Second(),
-		tm.Location().String(),
-		end,
+		"%s%d%s-%s%02d%s-%s%02d%s %s%02d%s:%s%02d%s:%s%02d%s %s%s%s",
+		Time, tm.Year(), end,
+		Time, tm.Month(), end,
+		Time, tm.Day(), end,
+		Time, tm.Hour(), end,
+		Time, tm.Minute(), end,
+		Time, tm.Second(), end,
+		Time, tm.Location().String(), end,
 	)
 }
 
 func (p *printer) printSlice() {
 	if p.value.Kind() == reflect.Slice && p.value.IsNil() {
-		fmt.Fprintf(p.tw, "%s(%s)", p.typeString(), p.nil())
+		fmt.Fprintf(p.tw, "%s(%s)", p.typeString(), snil)
 		return
 	}
 	if p.value.Len() == 0 {
@@ -314,11 +313,11 @@ func (p *printer) printSlice() {
 func (p *printer) printInterface() {
 	e := p.value.Elem()
 	if e.Kind() == reflect.Invalid {
-		fmt.Fprint(p.tw, p.nil())
+		fmt.Fprint(p.tw, snil)
 	} else if e.IsValid() {
 		fmt.Fprint(p.tw, p.format(e))
 	} else {
-		fmt.Fprintf(p.tw, "%s(%s)", p.typeString(), p.nil())
+		fmt.Fprintf(p.tw, "%s(%s)", p.typeString(), snil)
 	}
 }
 
@@ -334,7 +333,7 @@ func (p *printer) printPtr() {
 	if p.value.Elem().IsValid() {
 		fmt.Fprintf(p.tw, "&%s", p.format(p.value.Elem()))
 	} else {
-		fmt.Fprintf(p.tw, "(%s)(%s)", p.typeString(), p.nil())
+		fmt.Fprintf(p.tw, "(%s)(%s)", p.typeString(), snil)
 	}
 }
 
@@ -385,8 +384,4 @@ func (p *printer) indented(proc func()) {
 
 func (p *printer) indent() string {
 	return strings.Repeat("\t", p.depth)
-}
-
-func (p *printer) nil() string {
-	return fmt.Sprintf("%snil%s", Nil, end)
 }

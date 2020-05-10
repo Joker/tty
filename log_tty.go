@@ -18,6 +18,8 @@ const (
 	Lshortfile                    // final file name element and line number: d.go:23. overrides Llongfile
 	LUTC                          // if Ldate or Ltime is set, use UTC rather than the local time zone
 	LstdFlags     = Ldate | Ltime // initial values for the standard logger
+
+	rs = c.Reset
 )
 
 var std = log.New(os.Stderr, "", log.Lshortfile)
@@ -28,39 +30,38 @@ func SetFlags(flag int) {
 }
 
 func Info(v ...interface{}) {
-	std.Output(2, fmt.Sprintf(" %s[INFO]%s  %s%s\n", c.Green_h, c.Reset, fmt.Sprint(v...), c.Reset))
+	std.Output(2, fmt.Sprintf(" %s[INFO]%s  %s%s\n", c.Green_h, rs, fmt.Sprint(v...), rs))
 }
 func Note(v ...interface{}) {
-	std.Output(2, fmt.Sprintf(" %s[NOTE]%s  %s%s\n", c.Blue_h, c.Reset, fmt.Sprint(v...), c.Reset))
+	std.Output(2, fmt.Sprintf(" %s[NOTE]%s  %s%s\n", c.Blue_h, rs, fmt.Sprint(v...), rs))
 }
 func Warn(v ...interface{}) {
-	std.Output(2, fmt.Sprintf(" %s[WARN]%s  %s%s\n", c.Yellow_h, c.Reset, fmt.Sprint(v...), c.Reset))
+	std.Output(2, fmt.Sprintf(" %s[WARN]%s  %s%s\n", c.Yellow_h, rs, fmt.Sprint(v...), rs))
 }
 func Error(v ...interface{}) {
-	std.Output(2, fmt.Sprintf(" %s[ERRO]%s  %s%s\n", c.Red_h, c.Reset, fmt.Sprint(v...), c.Reset))
+	std.Output(2, fmt.Sprintf(" %s[ERRO]%s  %s%s\n", c.Red_h, rs, fmt.Sprint(v...), rs))
 }
 func Fatal(v ...interface{}) {
-	std.Output(2, fmt.Sprintf(" %s[FATA]%s  %s%s\n", c.Red, c.Reset, fmt.Sprint(v...), c.Reset))
+	std.Output(2, fmt.Sprintf(" %s[FATA]%s  %s%s\n", c.Red, rs, fmt.Sprint(v...), rs))
 }
 func Infof(format string, v ...interface{}) {
-	std.Output(2, fmt.Sprintf(" %s[INFO]%s  %s%s\n", c.Green_h, c.Reset, fmt.Sprintf(format, v...), c.Reset))
+	std.Output(2, fmt.Sprintf(" %s[INFO]%s  %s%s\n", c.Green_h, rs, fmt.Sprintf(format, v...), rs))
 }
 func Notef(format string, v ...interface{}) {
-	std.Output(2, fmt.Sprintf(" %s[NOTE]%s  %s%s\n", c.Blue_h, c.Reset, fmt.Sprintf(format, v...), c.Reset))
+	std.Output(2, fmt.Sprintf(" %s[NOTE]%s  %s%s\n", c.Blue_h, rs, fmt.Sprintf(format, v...), rs))
 }
 func Warnf(format string, v ...interface{}) {
-	std.Output(2, fmt.Sprintf(" %s[WARN]%s  %s%s\n", c.Yellow_h, c.Reset, fmt.Sprintf(format, v...), c.Reset))
+	std.Output(2, fmt.Sprintf(" %s[WARN]%s  %s%s\n", c.Yellow_h, rs, fmt.Sprintf(format, v...), rs))
 }
 func Errorf(format string, v ...interface{}) {
-	std.Output(2, fmt.Sprintf(" %s[ERRO]%s  %s%s\n", c.Red_h, c.Reset, fmt.Sprintf(format, v...), c.Reset))
+	std.Output(2, fmt.Sprintf(" %s[ERRO]%s  %s%s\n", c.Red_h, rs, fmt.Sprintf(format, v...), rs))
 }
 func Fatalf(format string, v ...interface{}) {
-	std.Output(2, fmt.Sprintf(" %s[FATA]%s  %s%s\n", c.Red, c.Reset, fmt.Sprintf(format, v...), c.Reset))
+	std.Output(2, fmt.Sprintf(" %s[FATA]%s  %s%s\n", c.Red, rs, fmt.Sprintf(format, v...), rs))
 }
 
 func Print(in interface{}) {
-	std.Output(2, newPrinter(in).String())
-	std.Output(2, "\n")
+	std.Output(2, newPrinter(in).String()+"\n")
 }
 func Println(v ...interface{}) {
 	var out = make([]interface{}, len(v))

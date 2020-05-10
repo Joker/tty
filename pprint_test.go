@@ -3,7 +3,6 @@
 package tty
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -78,9 +77,9 @@ var (
 )
 
 func TestFormat(t *testing.T) {
-	fmt.Println(newPrinter(checkCases).String())
 	MaxDepth = 1
-	Println(checkCases)
-	fmt.Println("")
+	Println(tm, checkCases)
+	MaxDepth = -1
+	Print(checkCases)
 	// pp.Println(checkCases)
 }

@@ -30,15 +30,15 @@ const (
 	StructName  = c.Green
 	ObjectLen   = c.Blue
 
-	printMapTypes   = true
-	printBufferSize = 1024
-
-	end  = c.Reset
-	snil = Nil + "nil" + end
+	printMapTypes = true
+	end           = c.Reset
+	snil          = Nil + "nil" + end
 )
 
 var (
+	MaxSlice = 1024
 	MaxDepth = -1
+	ColSpan  = 0
 	TabSize  = 2
 )
 
@@ -180,11 +180,11 @@ func (p *printer) printString() {
 }
 
 func (p *printer) printMap() {
-	if p.value.Len() == 0 {
+	lenSlice := p.value.Len()
+	if lenSlice == 0 {
 		fmt.Fprintf(p.tw, "%s{}", p.typeString())
 		return
 	}
-
 	if p.visited[p.value.Pointer()] {
 		fmt.Fprintf(p.tw, "%s{...}", p.typeString())
 		return
@@ -198,7 +198,7 @@ func (p *printer) printMap() {
 	}
 	p.indented(func() {
 		keys := p.value.MapKeys()
-		for i := 0; i < p.value.Len(); i++ {
+		for i := 0; i < lenSlice; i++ {
 			value := p.value.MapIndex(keys[i])
 			fmt.Fprintf(p.tw, "%s%s:\t%s,\n", p.indent(), p.format(keys[i]), p.format(value))
 		}
@@ -211,7 +211,6 @@ func (p *printer) printStruct() {
 		p.printTime()
 		return
 	}
-
 	if p.value.NumField() == 0 {
 		fmt.Fprint(p.tw, p.typeString()+"{}")
 		return
@@ -233,7 +232,6 @@ func (p *printer) printTime() {
 		fmt.Fprint(p.tw, "(unexported time.Time)")
 		return
 	}
-
 	tm := p.value.Interface().(time.Time)
 	fmt.Fprintf(p.tw,
 		"%s%d%s-%s%02d%s-%s%02d%s %s%02d%s:%s%02d%s:%s%02d%s %s%s%s",
@@ -248,63 +246,64 @@ func (p *printer) printTime() {
 }
 
 func (p *printer) printSlice() {
+	lenSlice := p.value.Len()
+	if lenSlice == 0 {
+		fmt.Fprintf(p.tw, "%s{}", p.typeString())
+		return
+	}
+	if lenSlice > MaxSlice { // Fold a large buffer
+		fmt.Fprintf(p.tw, "%s{...}", p.typeString())
+		return
+	}
+
 	if p.value.Kind() == reflect.Slice && p.value.IsNil() {
 		fmt.Fprintf(p.tw, "%s(%s)", p.typeString(), snil)
 		return
 	}
-	if p.value.Len() == 0 {
-		fmt.Fprintf(p.tw, "%s{}", p.typeString())
-		return
-	}
-
 	if p.value.Kind() == reflect.Slice {
-		if p.visited[p.value.Pointer()] {
-			// Stop travarsing cyclic reference
+		if p.visited[p.value.Pointer()] { // Stop travarsing cyclic reference
 			fmt.Fprintf(p.tw, "%s{...}", p.typeString())
 			return
 		}
 		p.visited[p.value.Pointer()] = true
 	}
 
-	// Fold a large buffer
-	if p.value.Len() > printBufferSize {
-		fmt.Fprintf(p.tw, "%s{...}", p.typeString())
-		return
-	}
-
 	fmt.Fprintln(p.tw, p.typeString()+"{")
 	p.indented(func() {
-		groupsize := 0
-		switch p.value.Type().Elem().Kind() {
-		case reflect.Uint8:
-			groupsize = 16
-		case reflect.Uint16:
-			groupsize = 8
-		case reflect.Uint32:
-			groupsize = 8
-		case reflect.Uint64:
-			groupsize = 4
+		if lenSlice > 10 || ColSpan > 0 {
+			span := 0
+			switch p.value.Type().Elem().Kind() {
+			case reflect.Int, reflect.Uint:
+				span = 18
+			case reflect.Int8, reflect.Uint8:
+				span = 24
+			case reflect.Int16, reflect.Uint16:
+				span = 18
+			case reflect.Uint32, reflect.Int32:
+				span = 12
+			case reflect.Int64, reflect.Uint64:
+				span = 7
+			case reflect.Uintptr, reflect.Float32, reflect.Float64:
+				span = 14
+			}
+			if span > 0 {
+				if ColSpan > 0 {
+					span = ColSpan
+				}
+				fmt.Fprintf(p.tw, "%s", p.indent())
+				for i := 0; i < lenSlice; i++ {
+					if d := i % span; d == 0 && i > 0 {
+						fmt.Fprintf(p.tw, "\n%s", p.indent())
+					}
+					fmt.Fprintf(p.tw, "%s, ", p.format(p.value.Index(i)))
+				}
+				fmt.Fprint(p.tw, "\n")
+				return
+			}
 		}
 
-		if groupsize > 0 {
-			for i := 0; i < p.value.Len(); i++ {
-				// indent for new group
-				if i%groupsize == 0 {
-					fmt.Fprint(p.tw, p.indent())
-				}
-				// slice element
-				fmt.Fprintf(p.tw, "%s,", p.format(p.value.Index(i)))
-				// space or newline
-				if (i+1)%groupsize == 0 || i+1 == p.value.Len() {
-					fmt.Fprint(p.tw, "\n")
-				} else {
-					fmt.Fprint(p.tw, " ")
-				}
-			}
-		} else {
-			for i := 0; i < p.value.Len(); i++ {
-				fmt.Fprintf(p.tw, "%s%s,\n", p.indent(), p.format(p.value.Index(i)))
-			}
+		for i := 0; i < lenSlice; i++ {
+			fmt.Fprintf(p.tw, "%s%s,\n", p.indent(), p.format(p.value.Index(i)))
 		}
 	})
 	fmt.Fprintf(p.tw, "%s}", p.indent())

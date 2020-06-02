@@ -88,6 +88,9 @@ func ByJSON(in []byte) {
 func JSONstr(in string) string {
 	return string(json.Color(json.Pretty([]byte(in)), nil))
 }
+func JSONbt(in []byte) string {
+	return string(json.Color(json.Pretty(in), nil))
+}
 
 //
 

@@ -8,7 +8,7 @@ import (
 	"os"
 
 	c "github.com/Joker/tty/color"
-	"github.com/tidwall/pretty"
+	json "github.com/tidwall/pretty"
 )
 
 const (
@@ -61,20 +61,42 @@ func Fatalf(format string, v ...interface{}) {
 	std.Output(2, fmt.Sprintf(" %s[FATA]%s  %s%s\n", c.Red, rs, fmt.Sprintf(format, v...), rs))
 }
 
-func Print(in interface{}) {
+//
+
+func PPrint(in interface{}) {
 	std.Output(2, newPrinter(in).String())
 }
-func Println(v ...interface{}) {
+func PPrintln(v ...interface{}) {
 	var out = make([]interface{}, len(v))
 	for i, object := range v {
 		out[i] = newPrinter(object).String()
 	}
 	std.Output(2, fmt.Sprintln(out...))
 }
+func PPstr(in interface{}) string {
+	return newPrinter(in).String()
+}
+
+//
 
 func JSON(in string) {
-	std.Output(2, string(pretty.Color(pretty.Pretty([]byte(in)), nil)))
+	std.Output(2, string(json.Color(json.Pretty([]byte(in)), nil)))
 }
 func ByJSON(in []byte) {
-	std.Output(2, string(pretty.Color(pretty.Pretty(in), nil)))
+	std.Output(2, string(json.Color(json.Pretty(in), nil)))
+}
+func JSONstr(in string) string {
+	return string(json.Color(json.Pretty([]byte(in)), nil))
+}
+
+//
+
+func Print(v ...interface{}) {
+	fmt.Print(v...)
+}
+func Printf(format string, v ...interface{}) {
+	fmt.Printf(format, v...)
+}
+func Println(v ...interface{}) {
+	fmt.Println(v...)
 }

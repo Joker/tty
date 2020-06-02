@@ -15,6 +15,7 @@ import "fmt"
 const (
 	Escape = "\033["   // \x1b
 	Reset  = "\033[0m" // \x1b[39;49m
+	Rs     = "\x1b[0m"
 
 	Black   = "\033[30m"
 	Red     = "\033[31m"

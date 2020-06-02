@@ -89,10 +89,10 @@ var (
 
 func TestFormat(t *testing.T) {
 	MaxDepth = 1
-	Println(tm, checkCases)
+	PPrintln(tm, checkCases)
 	MaxDepth = -1
-	Print(checkCases)
+	PPrint(checkCases)
 	ColSpan = 7
-	Print(sl)
+	PPrint(sl)
 	// pp.Println(checkCases)
 }

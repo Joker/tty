@@ -79,7 +79,7 @@ func PPstr(in interface{}) string {
 
 //
 
-func JSON(in string) {
+func PrJSON(in string) {
 	std.Output(2, string(json.Color(json.Pretty([]byte(in)), nil)))
 }
 func ByJSON(in []byte) {
@@ -88,8 +88,14 @@ func ByJSON(in []byte) {
 func JSONstr(in string) string {
 	return string(json.Color(json.Pretty([]byte(in)), nil))
 }
-func JSONbt(in []byte) string {
+func JSON(in []byte) string {
 	return string(json.Color(json.Pretty(in), nil))
+}
+func JSONline(in []byte) string {
+	return string(json.Color(json.Ugly(in), nil))
+}
+func JSONcolor(in []byte) string {
+	return string(json.Color(in, nil))
 }
 
 //

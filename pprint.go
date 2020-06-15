@@ -40,6 +40,7 @@ var (
 	MaxDepth = -1
 	ColSpan  = 0
 	TabSize  = 2
+	UintHex  = false
 )
 
 type printer struct {
@@ -126,16 +127,33 @@ func (p *printer) raw() string {
 		return fmt.Sprintf("%#v", p.value.Bool())
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return fmt.Sprintf("%#v", p.value.Int())
-	case reflect.Uint, reflect.Uintptr:
+	case reflect.Uintptr:
 		return fmt.Sprintf("%#v", p.value.Uint())
+	case reflect.Uint:
+		if UintHex {
+			return fmt.Sprintf("%#v", p.value.Uint())
+		}
+		return fmt.Sprintf("%d", p.value.Uint())
 	case reflect.Uint8:
-		return fmt.Sprintf("0x%02x", p.value.Uint())
+		if UintHex {
+			return fmt.Sprintf("0x%02x", p.value.Uint())
+		}
+		return fmt.Sprintf("%d", p.value.Uint())
 	case reflect.Uint16:
-		return fmt.Sprintf("0x%04x", p.value.Uint())
+		if UintHex {
+			return fmt.Sprintf("0x%04x", p.value.Uint())
+		}
+		return fmt.Sprintf("%d", p.value.Uint())
 	case reflect.Uint32:
-		return fmt.Sprintf("0x%08x", p.value.Uint())
+		if UintHex {
+			return fmt.Sprintf("0x%08x", p.value.Uint())
+		}
+		return fmt.Sprintf("%d", p.value.Uint())
 	case reflect.Uint64:
-		return fmt.Sprintf("0x%016x", p.value.Uint())
+		if UintHex {
+			return fmt.Sprintf("0x%016x", p.value.Uint())
+		}
+		return fmt.Sprintf("%d", p.value.Uint())
 	case reflect.Float32, reflect.Float64:
 		return fmt.Sprintf("%f", p.value.Float())
 	case reflect.Complex64, reflect.Complex128:

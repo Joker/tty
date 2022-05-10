@@ -1,5 +1,4 @@
 // Based on https://github.com/k0kubun/pp by Takashi Kokubun (c) 2015 The MIT License (MIT)
-// +build !windows
 
 package tty
 

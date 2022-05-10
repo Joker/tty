@@ -1,4 +1,6 @@
+//go:build linux
 // +build linux
+
 // from https://github.com/nsf/termbox-go/
 
 // package tty - utilities to work with terminals.

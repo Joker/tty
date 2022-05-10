@@ -1,5 +1,3 @@
-// +build !windows
-
 // Control Sequence Introducer  (SGR - Select Graphic Rendition)
 // '\033[%d;%dm' 			where %d is SGR(0..107)
 // '\033[38;2;%d;%d;%d;m' 	where %d is r;g;b (Cyan = 0;205;205)
